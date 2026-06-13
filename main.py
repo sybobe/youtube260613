@@ -149,18 +149,14 @@ def make_wordcloud(text):
             font_path = path
             break
 
-
-
-    font_path = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
-
     wordcloud = WordCloud(
-    font_path=font_path,
-    width=1200,
-    height=700,
-    background_color="white",
-    collocations=False
+        font_path=font_path,
+        width=1200,
+        height=700,
+        background_color="white",
+        max_words=150,
+        collocations=False
     ).generate(text)
-    
 
     fig, ax = plt.subplots(figsize=(12, 7))
     ax.imshow(wordcloud, interpolation="bilinear")
