@@ -4,7 +4,6 @@ from collections import Counter
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -17,7 +16,7 @@ st.set_page_config(
 )
 
 st.title("💬 유튜브 댓글 심층 분석기")
-st.write("유튜브 링크를 입력하면 댓글을 수집하고 감성, 키워드, 워드클라우드를 분석합니다.")
+st.write("유튜브 링크를 입력하면 댓글을 수집하고 감성, 키워드, 한글 워드클라우드를 분석합니다.")
 
 
 def get_api_key():
@@ -57,8 +56,8 @@ def tokenize_text(text):
     stopwords = {
         "그리고", "그래서", "하지만", "진짜", "너무", "정말", "완전", "그냥",
         "이거", "저거", "영상", "댓글", "유튜브", "오늘", "이번", "저는", "제가",
-        "입니다", "합니다", "ㅋㅋ", "ㅎㅎ", "ㅠㅠ", "ㅜㅜ", "the", "and", "you",
-        "for", "that", "this", "with", "have", "are", "was", "but"
+        "입니다", "합니다", "ㅋㅋ", "ㅎㅎ", "ㅠㅠ", "ㅜㅜ", "아니", "근데",
+        "the", "and", "you", "for", "that", "this", "with", "have", "are", "was", "but"
     }
 
     words = re.findall(r"[가-힣a-zA-Z]{2,}", text.lower())
@@ -134,22 +133,27 @@ def fetch_comments(api_key, video_id, max_comments):
     return pd.DataFrame(comments)
 
 
-def make_wordcloud(text):
+def find_korean_font():
     font_candidates = [
+        "fonts/NanumGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumSquareR.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumMyeongjo.ttf",
     ]
-
-    font_path = None
 
     for font in font_candidates:
         if os.path.exists(font):
-            font_path = font
-            break
+            return font
+
+    return None
+
+
+def make_wordcloud(text):
+    font_path = find_korean_font()
 
     if font_path is None:
-        st.error("한글 폰트를 찾지 못했습니다. packages.txt에 fonts-nanum을 추가했는지 확인하세요.")
+        st.error("한글 폰트를 찾지 못했습니다. packages.txt에 fonts-nanum을 추가하거나 fonts/NanumGothic.ttf를 업로드하세요.")
         return None
 
     wc = WordCloud(
@@ -162,15 +166,6 @@ def make_wordcloud(text):
     ).generate(text)
 
     return wc.to_array()
-
-def make_bar_chart(data, title):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    data.plot(kind="barh", ax=ax)
-    ax.set_title(title)
-    ax.set_xlabel("개수")
-    ax.set_ylabel("")
-    plt.tight_layout()
-    return fig
 
 
 with st.sidebar:
@@ -253,9 +248,7 @@ if st.button("🚀 댓글 분석 시작", use_container_width=True):
                     st.divider()
 
                     st.subheader("📊 감성 분석")
-
                     sentiment_count = df["감성"].value_counts()
-
                     st.bar_chart(sentiment_count)
 
                     positive_ratio = (df["감성"] == "긍정").mean() * 100
@@ -275,8 +268,14 @@ if st.button("🚀 댓글 분석 시작", use_container_width=True):
                     if len(words) == 0:
                         st.warning("워드클라우드를 만들 단어가 부족합니다.")
                     else:
-                        fig_wc = make_wordcloud(" ".join(words))
-                        st.pyplot(fig_wc)
+                        wc_image = make_wordcloud(" ".join(words))
+
+                        if wc_image is not None:
+                            st.image(
+                                wc_image,
+                                use_container_width=True,
+                                caption="☁️ 한글 워드클라우드"
+                            )
 
                     st.divider()
 
@@ -368,4 +367,4 @@ if st.button("🚀 댓글 분석 시작", use_container_width=True):
 else:
     st.info("API 키와 유튜브 링크를 입력한 뒤 분석을 시작하세요.")
 
-st.caption("※ plotly를 제거한 안정 버전입니다. Streamlit 기본 차트와 Matplotlib만 사용합니다.")
+st.caption("※ plotly와 matplotlib를 제거한 안정 버전입니다. Streamlit 기본 차트와 한글 워드클라우드를 사용합니다.")
