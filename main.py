@@ -138,18 +138,21 @@ def make_wordcloud(text):
     font_candidates = [
         "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
         "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
-        "/usr/share/fonts/truetype/nanum/NanumMyeongjo.ttf",
-        "C:/Windows/Fonts/malgun.ttf"
+        "/usr/share/fonts/truetype/nanum/NanumSquareR.ttf",
     ]
 
     font_path = None
 
-    for path in font_candidates:
-        if os.path.exists(path):
-            font_path = path
+    for font in font_candidates:
+        if os.path.exists(font):
+            font_path = font
             break
 
-    wordcloud = WordCloud(
+    if font_path is None:
+        st.error("한글 폰트를 찾지 못했습니다. packages.txt에 fonts-nanum을 추가했는지 확인하세요.")
+        return None
+
+    wc = WordCloud(
         font_path=font_path,
         width=1200,
         height=700,
@@ -158,12 +161,7 @@ def make_wordcloud(text):
         collocations=False
     ).generate(text)
 
-    fig, ax = plt.subplots(figsize=(12, 7))
-    ax.imshow(wordcloud, interpolation="bilinear")
-    ax.axis("off")
-
-    return fig
-
+    return wc.to_array()
 
 def make_bar_chart(data, title):
     fig, ax = plt.subplots(figsize=(10, 6))
